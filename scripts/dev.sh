@@ -2,9 +2,11 @@
 # SPPS-Entwicklungsumgebung starten: PostgreSQL (eingebettet) + Backend-API + Frontend-Devserver
 set -e
 cd "$(dirname "$0")/.."
-echo "== Backend (DB + API auf :8000) =="
+PY=python3
+[ -x .venv/bin/python ] && PY=.venv/bin/python
+echo "== Backend (DB + API auf :8000) mit $PY =="
 cd backend
-PYTHONPATH=. python3 scripts/dev_server.py &
+PYTHONPATH=. "$PY" scripts/dev_server.py &
 BACK_PID=$!
 cd ../frontend
 echo "== Frontend (Vite auf :5173, Proxy /api -> :8000) =="

@@ -17,19 +17,43 @@ Veröffentlichungsworkflow und Exports – als mandantenfähige Webapplikation (
 
 ## Schnellstart (lokale Entwicklung)
 
+Empfohlen unter Debian/Ubuntu (PEP 668: kein systemweites `pip install` nötig) mit **uv** —
+uv installiert automatisch Python 3.12, für den das eingebettete PostgreSQL (`pgserver`) ein Wheel hat:
+
 ```bash
-# 1) Abhängigkeiten
-pip install -r backend/requirements.txt
-cd frontend && npm install && cd ..
+# 0) Repo klonen und hinein wechseln
+ git clone https://github.com/pfeiferb72/stundenplan.git
+ cd stundenplan
+
+# 1) uv installieren (einmalig) und Python 3.12 + Abhängigkeiten in .venv
+ curl -LsSf https://astral.sh/uv/install.sh | sh
+ uv venv --python 3.12 .venv
+ uv pip install --python .venv/bin/python -r backend/requirements.txt
+ cd frontend && npm install && cd ..
 
 # 2) Alles starten: eingebettetes PostgreSQL + API (:8000) + Frontend (:5173)
 ./scripts/dev.sh
 #    oder einzeln:
-#    cd backend && PYTHONPATH=. python3 scripts/dev_server.py   # DB + Seed + API, OpenAPI: http://127.0.0.1:8000/docs
-#    cd frontend && npm run dev                                  # http://127.0.0.1:5173 (Proxy /api -> :8000)
+#    cd backend && PYTHONPATH=. ../.venv/bin/python scripts/dev_server.py   # DB + Seed + API, OpenAPI: http://127.0.0.1:8000/docs
+#    cd frontend && npm run dev                                              # http://127.0.0.1:5173 (Proxy /api -> :8000)
 
 # 3) Demo-Login (Dev-Modus): planer@schule.at / leitung@schule.at / huber@schule.at / admin@schule.at
 ```
+
+**Alternative ohne uv (klassisches venv + System-PostgreSQL):**
+
+```bash
+sudo apt install python3-venv python3-full postgresql   # Debian/Ubuntu
+ git clone https://github.com/pfeiferb72/stundenplan.git && cd stundenplan
+ python3 -m venv .venv && source .venv/bin/activate
+ pip install -r backend/requirements.txt
+ # eigene DB vorbereiten (als postgres-User):  createdb spps
+ export SPPS_DATABASE_URL="postgresql+psycopg://postgres@localhost:5432/spps"
+ cd backend && PYTHONPATH=. python scripts/dev_server.py    # API auf :8000, ohne pgserver-Seed: POST /api/init-db
+ cd ../frontend && npm install && npm run dev               # :5173
+```
+
+Hinweis: `pgserver` (eingebettetes PostgreSQL) benötigt Python ≤ 3.13; mit Python 3.14 bitte die Alternative mit System-PostgreSQL verwenden.
 
 Die lokale PostgreSQL-Instanz läuft eingebettet via `pgserver` (Daten in `.pgdata/`, EU-lokal).
 In Produktion wird ein verwalteter PostgreSQL-Cluster per `SPPS_DATABASE_URL` angebunden
