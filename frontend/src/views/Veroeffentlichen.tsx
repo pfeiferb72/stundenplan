@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { api, Me } from '../api'
+import { fachChipStyle } from '../theme'
 
 export default function Veroeffentlichen({ me }: { me: Me }) {
   const [versionen, setVersionen] = useState<any[]>([])
@@ -107,7 +108,7 @@ export default function Veroeffentlichen({ me }: { me: Me }) {
                     return (
                       <td key={day}>
                         {z?.eintraege.map((e: any) => (
-                          <div key={e.stunde_id} className={`stunde ${e.zustand}`}>
+                          <div key={e.stunde_id} className={`stunde ${e.zustand}`} style={fachChipStyle(e.fach)}>
                             {e.fach} {e.klasse !== '?' ? e.klasse : ''} {e.raum}<br /><span className="small">{e.lehrkraft}</span>
                           </div>
                         ))}

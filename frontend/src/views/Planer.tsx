@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { api } from '../api'
+import { fachChipStyle } from '../theme'
 
 const TAGE = ['Mo', 'Di', 'Mi', 'Do', 'Fr']
 
@@ -13,6 +14,7 @@ export default function Planer() {
   const [lehrkraefte, setLehrkraefte] = useState<any[]>([])
   const [raeume, setRaeume] = useState<any[]>([])
   const [config, setConfig] = useState<any>(null)
+  const [gegenstaende, setGegenstaende] = useState<any[]>([])
   const [slots, setSlots] = useState(8)
   const [runs, setRuns] = useState<any[]>([])
   const [activeRun, setActiveRun] = useState<any>(null)
@@ -23,15 +25,16 @@ export default function Planer() {
   const [dropCell, setDropCell] = useState<string>('')
 
   const loadBase = useCallback(async () => {
-    const [v, k, lk, r, schule] = await Promise.all([
+    const [v, k, lk, r, schule, g] = await Promise.all([
       api<any[]>('/plan/versionen'), api<any[]>('/stammdaten/klassen'),
       api<any[]>('/stammdaten/lehrkraefte'), api<any[]>('/stammdaten/raeume'),
-      api<any>('/stammdaten/schule'),
+      api<any>('/stammdaten/schule'), api<any[]>('/stammdaten/gegenstaende'),
     ])
     setVersionen(v)
     setKlassen(k)
     setLehrkraefte(lk)
     setRaeume(r)
+    setGegenstaende(g)
     setConfig(schule.config)
     setSlots(schule.config?.slots_pro_tag ?? 8)
     if (k.length && klasseId === '') setKlasseId(k[0].id)
@@ -97,6 +100,7 @@ export default function Planer() {
   }
 
   const vById = useMemo(() => Object.fromEntries(veranstaltungen.map((v) => [v.id, v])), [veranstaltungen])
+  const gById = useMemo(() => Object.fromEntries(gegenstaende.map((g) => [g.id, g])), [gegenstaende])
   const lkById = useMemo(() => Object.fromEntries(lehrkraefte.map((l) => [l.id, l])), [lehrkraefte])
   const raumById = useMemo(() => Object.fromEntries(raeume.map((r) => [r.id, r])), [raeume])
 
@@ -203,11 +207,13 @@ export default function Planer() {
                           const v = vById[s.veranstaltung_id]
                           const lk = lkById[s.lehrkraft_id]
                           const raum = raumById[s.raum_id]
+                          const fach = v ? (gById[v.gegenstand_id]?.code ?? '?') : '?'
                           return (
                             <div key={s.id} className={`stunde ${s.zustand} ${s.fixiert ? 'fixiert' : ''}`} draggable
                                  onDragStart={() => setDrag({ stunde: s })}
-                                 title={`${v?.gegenstand_id ?? ''} · ${raum?.name ?? ''} · ${lk ? lk.nachname : ''} · ${s.zustand}`}>
-                              {v ? `v${v.gegenstand_id}` : '?'} {raum?.name ?? ''}<br />
+                                 style={fachChipStyle(fach)}
+                                 title={`${fach} · ${raum?.name ?? ''} · ${lk ? lk.nachname : ''} · ${s.zustand}`}>
+                              {fach} · {raum?.name ?? ''}<br />
                               <span className="small">{lk?.nachname ?? ''}</span>
                             </div>
                           )
