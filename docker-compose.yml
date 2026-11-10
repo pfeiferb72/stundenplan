@@ -1,0 +1,39 @@
+# Produktions-Referenz (NF-203: EU/EEA, DSGVO): API + verwalteter PostgreSQL + statisches Frontend.
+# Lokale Entwicklung ohne Docker: ./scripts/dev.sh (eingebettetes PostgreSQL via pgserver).
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: spps
+      POSTGRES_PASSWORD: ${SPPS_DB_PASSWORD:?set in environment}
+      POSTGRES_DB: spps
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    # kein Port-Publishing nach außen – nur internes Netz (kein öffentliches Exposure)
+    networks: [spps-internal]
+
+  api:
+    build: ./backend
+    environment:
+      SPPS_DATABASE_URL: postgresql+psycopg://spps:${SPPS_DB_PASSWORD:?set}@db:5432/spps
+      SPPS_JWT_SECRET: ${SPPS_JWT_SECRET:?set}
+      SPPS_DEV_AUTH: "false"
+      SPPS_OIDC_ISSUER: ${SPPS_OIDC_ISSUER:-}
+      SPPS_OIDC_CLIENT_ID: ${SPPS_OIDC_CLIENT_ID:-}
+      SPPS_OIDC_CLIENT_SECRET: ${SPPS_OIDC_CLIENT_SECRET:-}
+      SPPS_OIDC_REDIRECT_URI: ${SPPS_OIDC_REDIRECT_URI:-https://spps.example.at/api/auth/callback}
+      SPPS_CORS_ORIGINS: ${SPPS_CORS_ORIGINS:-https://spps.example.at}
+    depends_on: [db]
+    networks: [spps-internal]
+    # hinter Reverse Proxy (TLS 1.2+, NF-201) auf internes Netz; kein direktes Public Binding
+
+  frontend:
+    build: ./frontend
+    networks: [spps-internal]
+
+volumes:
+  pgdata:
+
+networks:
+  spps-internal:
+    internal: true
