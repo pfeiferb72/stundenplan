@@ -50,3 +50,32 @@ export async function devLogin(email: string) {
 export async function fetchMe(): Promise<Me> {
   return api<Me>('/auth/me')
 }
+
+/** Export-Endpunkte mit Bearer-Token laden (Browser-Links können keinen Header mitsenden). */
+async function exportFetch(path: string): Promise<Blob> {
+  const token = getToken()
+  const res = await fetch(path, { headers: token ? { Authorization: `Bearer ${token}` } : {} })
+  if (!res.ok) {
+    let msg = `HTTP ${res.status}`
+    try {
+      const d = JSON.parse(await res.text())
+      msg = typeof d.detail === 'string' ? d.detail : JSON.stringify(d.detail ?? msg)
+    } catch { /* keine JSON-Fehlermeldung */ }
+    if (res.status === 401) { setToken(null); window.location.hash = '#/login' }
+    throw new Error(msg)
+  }
+  return res.blob()
+}
+
+export async function downloadExport(path: string, filename: string): Promise<void> {
+  const url = URL.createObjectURL(await exportFetch(path))
+  const a = document.createElement('a')
+  a.href = url
+  a.download = filename
+  a.click()
+  setTimeout(() => URL.revokeObjectURL(url), 5000)
+}
+
+export async function openExport(path: string): Promise<void> {
+  window.open(URL.createObjectURL(await exportFetch(path)), '_blank')
+}

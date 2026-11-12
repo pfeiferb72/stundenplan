@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { api, Me } from '../api'
+import { api, downloadExport, Me, openExport } from '../api'
 import { fachChipStyle } from '../theme'
 
 export default function Veroeffentlichen({ me }: { me: Me }) {
@@ -41,6 +41,13 @@ export default function Veroeffentlichen({ me }: { me: Me }) {
   }
 
   const exportUrl = (fmt: string) => `/api/export/${fmt}?art=${art}&ziel_id=${zielId}`
+  const doExport = async (fmt: string) => {
+    try {
+      if (fmt === 'html') await openExport(exportUrl('html'))
+      else await downloadExport(exportUrl(fmt), `plan-${art}-${zielId}.${fmt}`)
+      setMsg({ t: `Export ${fmt.toUpperCase()} geladen (nur ver\u00f6ffentlichte Stunden, FD-704)`, ok: true })
+    } catch (e: any) { setMsg({ t: `Export fehlgeschlagen: ${e.message}`, ok: false }) }
+  }
   const selected = versionen.find((v) => v.id === vid)
 
   return (
@@ -79,10 +86,10 @@ export default function Veroeffentlichen({ me }: { me: Me }) {
         </div>
         {zielId !== '' && (
           <>
-            <a href={exportUrl('pdf')}><button className="secondary">PDF (FD-704)</button></a>
-            <a href={exportUrl('ics')}><button className="secondary">iCalendar</button></a>
-            <a href={exportUrl('csv')}><button className="secondary">CSV</button></a>
-            <a href={exportUrl('html')} target="_blank" rel="noreferrer"><button className="secondary">HTML-Widget</button></a>
+            <button className="secondary" onClick={() => doExport('pdf')}>PDF (FD-704)</button>
+            <button className="secondary" onClick={() => doExport('ics')}>iCalendar</button>
+            <button className="secondary" onClick={() => doExport('csv')}>CSV</button>
+            <button className="secondary" onClick={() => doExport('html')}>HTML-Widget</button>
             <button className="secondary" onClick={createAbo}>Abo erstellen (FD-705)</button>
           </>
         )}
